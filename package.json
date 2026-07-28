@@ -1,0 +1,8 @@
+{
+  "name": "ai-health-monitoring",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "dashboard"
+  ]
+}
