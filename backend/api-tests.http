@@ -1,0 +1,184 @@
+### AI Health Monitoring API (Phase 1) Test Collection
+### Use with VS Code REST Client extension or convert to curl/Postman
+
+@baseUrl = http://localhost:3000
+@token = YOUR_FIREBASE_ID_TOKEN_HERE
+
+### ==========================================
+### 1. HEALTH CHECK
+### ==========================================
+GET {{baseUrl}}/health
+
+
+### ==========================================
+### 2. PATIENTS MODULE
+### ==========================================
+
+### 2.1 Create Patient Profile (Post-Signup)
+POST {{baseUrl}}/patients
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "dob": "1998-05-15T00:00:00.000Z",
+  "sex": "male",
+  "heightCm": 178.5,
+  "weightKg": 72.0,
+  "conditions": ["Hypertension", "Diabetes Type 2"],
+  "phone": "+919876543210"
+}
+
+### 2.2 Get Own Patient Profile
+GET {{baseUrl}}/patients/me
+Authorization: Bearer {{token}}
+
+### 2.3 Update Own Patient Profile
+PATCH {{baseUrl}}/patients/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "weightKg": 71.2,
+  "conditions": ["Hypertension"]
+}
+
+### 2.4 Add Emergency Contact
+POST {{baseUrl}}/patients/me/emergency-contacts
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Mom",
+  "phone": "+919876543210",
+  "relation": "Mother"
+}
+
+### 2.5 Get Emergency Contacts
+GET {{baseUrl}}/patients/me/emergency-contacts
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### 3. DEVICES MODULE
+### ==========================================
+
+### 3.1 Connect Device
+POST {{baseUrl}}/devices/connect
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "platform": "health_connect",
+  "deviceName": "Samsung Galaxy Watch 6"
+}
+
+### 3.2 List Connected Devices
+GET {{baseUrl}}/devices
+Authorization: Bearer {{token}}
+
+### 3.3 Sync Device
+PATCH {{baseUrl}}/devices/YOUR_DEVICE_ID_HERE/sync
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### 4. VITALS MODULE
+### ==========================================
+
+### 4.1 Ingest Vitals (Batch) — Normal Vitals
+POST {{baseUrl}}/vitals/ingest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "deviceId": "YOUR_DEVICE_ID_HERE",
+  "readings": [
+    {
+      "metric": "heart_rate",
+      "value": 72.0,
+      "unit": "bpm",
+      "recordedAt": "2026-08-02T10:00:00.000Z"
+    },
+    {
+      "metric": "spo2",
+      "value": 98.0,
+      "unit": "%",
+      "recordedAt": "2026-08-02T10:00:00.000Z"
+    }
+  ]
+}
+
+### 4.2 Ingest Vitals (Batch) — Threshold Breach (Triggers Alert)
+POST {{baseUrl}}/vitals/ingest
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "deviceId": "YOUR_DEVICE_ID_HERE",
+  "readings": [
+    {
+      "metric": "heart_rate",
+      "value": 142.0,
+      "unit": "bpm",
+      "recordedAt": "2026-08-02T10:05:00.000Z"
+    },
+    {
+      "metric": "spo2",
+      "value": 91.0,
+      "unit": "%",
+      "recordedAt": "2026-08-02T10:05:00.000Z"
+    }
+  ]
+}
+
+### 4.3 Query Vitals Time-Range
+GET {{baseUrl}}/vitals/YOUR_PATIENT_ID_HERE?metric=heart_rate&from=2026-08-01T00:00:00.000Z
+Authorization: Bearer {{token}}
+
+
+### ==========================================
+### 5. ALERTS MODULE
+### ==========================================
+
+### 5.1 List Alerts
+GET {{baseUrl}}/alerts?status=open&limit=10
+Authorization: Bearer {{token}}
+
+### 5.2 Acknowledge Alert
+PATCH {{baseUrl}}/alerts/YOUR_ALERT_ID_HERE/acknowledge
+Authorization: Bearer {{token}}
+
+### 5.3 Submit Feedback on Alert
+PATCH {{baseUrl}}/alerts/YOUR_ALERT_ID_HERE/feedback
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "label": "true_positive"
+}
+
+### 5.4 Trigger SOS Emergency Alert
+POST {{baseUrl}}/alerts/sos
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "latitude": 19.0760,
+  "longitude": 72.8777
+}
+
+
+### ==========================================
+### 6. AUTH FAILURE TESTS
+### ==========================================
+
+### 6.1 Missing Auth Header (Expect 401)
+GET {{baseUrl}}/patients/me
+
+### 6.2 Invalid Token (Expect 401)
+GET {{baseUrl}}/patients/me
+Authorization: Bearer invalid_token_xyz
+
+### 6.3 Access Other Patient's Data (Expect 403)
+GET {{baseUrl}}/vitals/other_patient_id_123
+Authorization: Bearer {{token}}

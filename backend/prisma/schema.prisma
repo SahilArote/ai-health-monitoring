@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  patient
+  doctor
+  hospital_admin
+  super_admin
+}
+
+enum DevicePlatform {
+  health_connect
+  healthkit
+  ble
+  synthetic
+}
+
+enum DeviceStatus {
+  connected
+  disconnected
+  error
+}
+
+enum MetricType {
+  heart_rate
+  spo2
+  sleep
+  steps
+  calories
+  distance
+  temperature
+}
+
+enum AlertSeverity {
+  warning
+  critical
+}
+
+enum AlertSource {
+  rule
+  ml
+}
+
+enum AlertStatus {
+  open
+  acknowledged
+  resolved
+}
+
+enum FeedbackLabel {
+  true_positive
+  false_positive
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firebaseUid  String   @unique
+  email        String   @unique
+  role         UserRole
+  phone        String?
+  createdAt    DateTime @default(now())
+  isActive     Boolean  @default(true)
+  patient      Patient?
+  doctor       Doctor?
+  alertsResolved Alert[] @relation("AlertResolvedBy")
+
+  @@map("users")
+}
+
+model Patient {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dob                DateTime
+  sex                String
+  heightCm           Float?
+  weightKg           Float?
+  conditions         Json?
+  assignedDoctorId   String?
+  doctor             Doctor?  @relation("DoctorPatients", fields: [assignedDoctorId], references: [id], onDelete: SetNull)
+  devices            Device[]
+  vitalsReadings     VitalsReading[]
+  alerts             Alert[]
+  emergencyContacts  EmergencyContact[]
+
+  @@map("patients")
+}
+
+model Doctor {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patients  Patient[] @relation("DoctorPatients")
+
+  @@map("doctors")
+}
+
+model Device {
+  id            String        @id @default(cuid())
+  patientId     String
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  platform      DevicePlatform
+  deviceName    String
+  connectedAt   DateTime      @default(now())
+  lastSyncAt    DateTime?
+  status        DeviceStatus  @default(connected)
+  vitalsReadings VitalsReading[]
+
+  @@map("devices")
+}
+
+model VitalsReading {
+  id          String     @id @default(cuid())
+  patientId   String
+  patient     Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  deviceId    String
+  device      Device     @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  metricType  MetricType
+  value       Float
+  unit        String
+  source      String
+  recordedAt  DateTime
+
+  @@unique([patientId, deviceId, metricType, recordedAt])
+  @@index([patientId, metricType, recordedAt(sort: Desc)])
+  @@map("vitals_readings")
+}
+
+model Alert {
+  id            String        @id @default(cuid())
+  patientId     String
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  metricType    String
+  value         Float
+  severity      AlertSeverity
+  source        AlertSource
+  status        AlertStatus   @default(open)
+  createdAt     DateTime      @default(now())
+  resolvedById  String?
+  resolvedBy    User?         @relation("AlertResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+  feedbackLabel FeedbackLabel?
+
+  @@index([patientId, status, createdAt(sort: Desc)])
+  @@map("alerts")
+}
+
+model EmergencyContact {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  relation  String
+
+  @@map("emergency_contacts")
+}
