@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,11 @@ import { useAlertStore } from '../../src/stores/alertStore';
 import { AlertItem, AlertSeverity } from '../../src/types/alerts';
 
 export default function AlertsScreen() {
-  const { alerts, filter, setFilter, unreadCount } = useAlertStore();
+  const { alerts, filter, setFilter, unreadCount, fetchAlerts } = useAlertStore();
+
+  useEffect(() => {
+    fetchAlerts();
+  }, []);
 
   const filteredAlerts =
     filter === 'ALL'

@@ -157,4 +157,66 @@ export class PatientsService {
       where: { patientId },
     });
   }
+
+  static async getPatientSummary(patientId: string) {
+    const patient = await prisma.patient.findUnique({
+      where: { id: patientId },
+      include: {
+        user: { select: { id: true, email: true, phone: true } },
+        doctor: { include: { user: { select: { email: true, phone: true } } } },
+        devices: { orderBy: { connectedAt: 'desc' }, take: 1 },
+      },
+    });
+
+    if (!patient) {
+      throw new AppError('Patient profile not found', 404);
+    }
+
+    // Fetch latest reading for each metric
+    const metrics = ['heart_rate', 'spo2', 'temperature', 'steps', 'sleep'];
+    const latestVitals: Record<string, any> = {};
+
+    for (const m of metrics) {
+      const reading = await prisma.vitalsReading.findFirst({
+        where: { patientId, metricType: m as any },
+        orderBy: { recordedAt: 'desc' },
+      });
+      if (reading) {
+        latestVitals[m] = {
+          value: reading.value,
+          unit: reading.unit,
+          recordedAt: reading.recordedAt,
+        };
+      }
+    }
+
+    // Count open alerts and determine overall status
+    const openAlertsCount = await prisma.alert.count({
+      where: { patientId, status: 'open' },
+    });
+
+    const criticalAlertsCount = await prisma.alert.count({
+      where: { patientId, status: 'open', severity: 'critical' },
+    });
+
+    const overallStatus = criticalAlertsCount > 0 ? 'critical' : openAlertsCount > 0 ? 'warning' : 'normal';
+
+    return {
+      patient: {
+        id: patient.id,
+        email: patient.user.email,
+        phone: patient.user.phone,
+        dob: patient.dob,
+        sex: patient.sex,
+        heightCm: patient.heightCm,
+        weightKg: patient.weightKg,
+        conditions: patient.conditions,
+        doctorName: patient.doctor ? `Dr. ${patient.doctor.user.email.split('@')[0]}` : 'Unassigned',
+      },
+      device: patient.devices[0] || null,
+      latestVitals,
+      openAlertsCount,
+      overallStatus,
+    };
+  }
 }

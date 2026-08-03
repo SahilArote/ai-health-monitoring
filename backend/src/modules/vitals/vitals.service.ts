@@ -128,4 +128,55 @@ export class VitalsService {
       take: 100, // Reasonable cap
     });
   }
+
+  static async queryTrends(
+    targetPatientId: string,
+    metric: MetricType,
+    period: '7D' | '14D' | '30D' = '7D'
+  ) {
+    const days = period === '30D' ? 30 : period === '14D' ? 14 : 7;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const readings = await prisma.vitalsReading.findMany({
+      where: {
+        patientId: targetPatientId,
+        metricType: metric,
+        recordedAt: { gte: startDate },
+      },
+      orderBy: { recordedAt: 'asc' },
+    });
+
+    // Group readings by Date string (YYYY-MM-DD)
+    const groupedByDay: Record<string, number[]> = {};
+    for (const r of readings) {
+      const dayKey = r.recordedAt.toISOString().split('T')[0];
+      if (!groupedByDay[dayKey]) groupedByDay[dayKey] = [];
+      groupedByDay[dayKey].push(r.value);
+    }
+
+    // Transform into daily trend objects
+    const trends = Object.entries(groupedByDay).map(([day, values]) => {
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const avg = Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+      const latest = values[values.length - 1];
+
+      return {
+        date: day,
+        min,
+        max,
+        avg,
+        value: latest,
+        count: values.length,
+      };
+    });
+
+    return {
+      metric,
+      period,
+      daysCount: trends.length,
+      trends,
+    };
+  }
 }

@@ -27,6 +27,14 @@ router.get(
   PatientsController.getMe
 );
 
+// GET /patients/me/summary (dashboard overview payload for Home screen)
+router.get(
+  '/me/summary',
+  authMiddleware,
+  requireRole('patient'),
+  PatientsController.getSummary
+);
+
 // PATCH /patients/me (update profile)
 router.patch(
   '/me',

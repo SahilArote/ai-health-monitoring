@@ -81,4 +81,18 @@ export class PatientsController {
       next(err);
     }
   }
+
+  static async getSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const patientId = req.user?.patientId;
+      if (!patientId) {
+        throw new AppError('Patient profile not found', 404);
+      }
+
+      const summary = await PatientsService.getPatientSummary(patientId);
+      return sendSuccess(res, summary);
+    } catch (err) {
+      next(err);
+    }
+  }
 }
