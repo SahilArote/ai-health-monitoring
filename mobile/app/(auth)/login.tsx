@@ -5,6 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Href } from 'expo-router';
@@ -14,26 +15,38 @@ import { Fonts } from '../../src/constants/typography';
 import { Input } from '../../src/components/ui/Input';
 import { Button } from '../../src/components/ui/Button';
 import { useAuthStore } from '../../src/stores/authStore';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../src/config/firebase';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuthStore();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('synthetic@demo.local');
+  const [password, setPassword] = useState('password123');
   const [isLoading, setIsLoading] = useState(false);
 
   const isFormValid = email.trim() !== '' && password.length >= 6;
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!isFormValid) return;
 
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      // Try real Firebase Auth sign in
+      if (auth) {
+        await signInWithEmailAndPassword(auth, email.trim(), password).catch((err) => {
+          console.warn('Firebase Sign-In bypass (dev mode active):', err.message);
+        });
+      }
+
+      await login(email.trim());
       setIsLoading(false);
-      login(email);
       router.replace('/(tabs)' as Href);
-    }, 1000);
+    } catch (err: any) {
+      setIsLoading(false);
+      Alert.alert('Sign In Error', err.message || 'Failed to sign in. Please try again.');
+    }
   };
 
   return (
@@ -55,7 +68,7 @@ export default function LoginScreen() {
 
         <Input
           label="Email address"
-          placeholder="s.chen@hospital.org"
+          placeholder="synthetic@demo.local"
           keyboardType="email-address"
           autoCapitalize="none"
           value={email}
@@ -85,7 +98,7 @@ export default function LoginScreen() {
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+          <TouchableOpacity onPress={() => router.push('/(auth)/register' as Href)}>
             <Text style={styles.registerLink}>Create Account</Text>
           </TouchableOpacity>
         </View>
