@@ -33,6 +33,13 @@ export default function HomeScreen() {
     fetchProfile();
     fetchAlerts();
     fetchDevices();
+
+    // Poll live vitals every 4 seconds
+    const interval = setInterval(() => {
+      fetchSummary();
+    }, 4000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const userName = user?.name ? user.name.split(' ')[0] : 'Patient';

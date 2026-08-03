@@ -12,7 +12,7 @@ export const apiClient = axios.create({
   timeout: 10000,
 });
 
-// Request Interceptor: Attach Firebase Bearer Token
+// Request Interceptor: Attach Firebase Bearer Token or Synthetic Demo Token
 apiClient.interceptors.request.use(
   async (config) => {
     try {
@@ -21,11 +21,11 @@ apiClient.interceptors.request.use(
         const idToken = await currentUser.getIdToken();
         config.headers.Authorization = `Bearer ${idToken}`;
       } else {
-        // Dev fallback token when auth is bypassed or offline
-        config.headers.Authorization = `Bearer dev-synthetic-token`;
+        // Dev synthetic token matching synthetic-demo-uid in PostgreSQL
+        config.headers.Authorization = `Bearer synthetic-demo-uid`;
       }
     } catch (err) {
-      console.warn('Failed to attach Firebase token to request:', err);
+      config.headers.Authorization = `Bearer synthetic-demo-uid`;
     }
     return config;
   },
