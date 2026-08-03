@@ -64,7 +64,9 @@ export const useVitalsStore = create<VitalsState>()((set: any, get: any) => ({
     set({ loading: true });
     try {
       const state = get();
-      const patientId = 'cmsd8m8va0001j9tl5on71rvz'; // Will be dynamic from authStore or config
+      // Fetch current patient profile ID or default summary
+      const summaryPayload: any = await AuthAPI.getSummary().catch(() => null);
+      const patientId = summaryPayload?.patient?.id || 'cmsd8m8va0001j9tl5on71rvz';
       const trendData = await VitalsAPI.getTrends(patientId, state.selectedMetric, state.selectedTrendPeriod);
       const adaptedTrend = adaptTrendsToUI(trendData);
 
