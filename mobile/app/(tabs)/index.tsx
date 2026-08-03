@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Href } from 'expo-router';
@@ -17,14 +18,24 @@ import { ActivitySummary } from '../../src/components/home/ActivitySummary';
 import { RecentAlertCard } from '../../src/components/home/RecentAlertCard';
 import { useVitalsStore } from '../../src/stores/vitalsStore';
 import { useAuthStore } from '../../src/stores/authStore';
-import { mockAlerts } from '../../src/data/mockData';
+import { useAlertStore } from '../../src/stores/alertStore';
+import { useDeviceStore } from '../../src/stores/deviceStore';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { liveVitals, activity } = useVitalsStore();
-  const { user } = useAuthStore();
+  const { liveVitals, activity, fetchSummary, loading } = useVitalsStore();
+  const { user, fetchProfile } = useAuthStore();
+  const { alerts, fetchAlerts } = useAlertStore();
+  const { fetchDevices } = useDeviceStore();
 
-  const userName = user?.name ? user.name.split(' ')[0] : 'Sarah';
+  useEffect(() => {
+    fetchSummary();
+    fetchProfile();
+    fetchAlerts();
+    fetchDevices();
+  }, []);
+
+  const userName = user?.name ? user.name.split(' ')[0] : 'Patient';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -68,10 +79,12 @@ export default function HomeScreen() {
         <ActivitySummary activity={activity} />
 
         {/* Recent Alert */}
-        <RecentAlertCard
-          alert={mockAlerts[0]}
-          onPress={() => router.push('/(tabs)/alerts' as Href)}
-        />
+        {alerts.length > 0 && (
+          <RecentAlertCard
+            alert={alerts[0]}
+            onPress={() => router.push('/(tabs)/alerts' as Href)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

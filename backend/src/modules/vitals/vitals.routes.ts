@@ -18,6 +18,14 @@ router.post(
   VitalsController.ingest
 );
 
+// GET /vitals/:patientId/trends (daily aggregated trend data)
+router.get(
+  '/:patientId/trends',
+  authMiddleware,
+  requireRole('patient', 'doctor'),
+  VitalsController.queryTrends
+);
+
 // GET /vitals/:patientId (patient self or doctor)
 router.get(
   '/:patientId',

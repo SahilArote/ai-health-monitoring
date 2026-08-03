@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../src/constants/colors';
@@ -9,7 +9,11 @@ import { useVitalsStore } from '../../src/stores/vitalsStore';
 import { VitalTrend } from '../../src/types/vitals';
 
 export default function TrendsScreen() {
-  const { trends, selectedTrendPeriod, setTrendPeriod } = useVitalsStore();
+  const { trends, selectedTrendPeriod, setTrendPeriod, fetchTrends } = useVitalsStore();
+
+  useEffect(() => {
+    fetchTrends();
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

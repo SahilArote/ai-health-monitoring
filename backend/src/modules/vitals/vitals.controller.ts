@@ -36,4 +36,21 @@ export class VitalsController {
       next(err);
     }
   }
+
+  static async queryTrends(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { patientId } = req.params;
+      const { metric = 'heart_rate', period = '7D' } = req.query as any;
+
+      // Ownership check for patients
+      if (req.user?.role === 'patient' && req.user.patientId !== patientId) {
+        throw new AppError('Forbidden: Patients can only view their own vitals trends', 403);
+      }
+
+      const trendResult = await VitalsService.queryTrends(patientId, metric as any, period as any);
+      return sendSuccess(res, trendResult);
+    } catch (err) {
+      next(err);
+    }
+  }
 }

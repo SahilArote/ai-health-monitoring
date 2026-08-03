@@ -2,15 +2,24 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, Alert } from 'react-native';
 import { Colors } from '../../constants/colors';
 import { Fonts } from '../../constants/typography';
+import { useAlertStore } from '../../stores/alertStore';
 
 export const SOSButton: React.FC = () => {
+  const { triggerSOS } = useAlertStore();
+
   const handleSOSPress = () => {
     Alert.alert(
       'Emergency SOS Triggered',
       'Contacting emergency services and notifying care team...',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Confirm Call', style: 'destructive', onPress: () => {} },
+        {
+          text: 'Confirm Call',
+          style: 'destructive',
+          onPress: () => {
+            triggerSOS(19.0760, 72.8777);
+          },
+        },
       ]
     );
   };
