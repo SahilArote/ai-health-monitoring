@@ -64,14 +64,22 @@ export const useVitalsStore = create<VitalsState>()((set: any, get: any) => ({
     set({ loading: true });
     try {
       const state = get();
-      // Fetch current patient profile ID or default summary
       const summaryPayload: any = await AuthAPI.getSummary().catch(() => null);
       const patientId = summaryPayload?.patient?.id || 'cmsd8m8va0001j9tl5on71rvz';
-      const trendData = await VitalsAPI.getTrends(patientId, state.selectedMetric, state.selectedTrendPeriod);
-      const adaptedTrend = adaptTrendsToUI(trendData);
+
+      // Fetch trends for all 3 metrics simultaneously
+      const [hrData, spo2Data, tempData] = await Promise.all([
+        VitalsAPI.getTrends(patientId, 'heart_rate', state.selectedTrendPeriod).catch(() => null),
+        VitalsAPI.getTrends(patientId, 'spo2', state.selectedTrendPeriod).catch(() => null),
+        VitalsAPI.getTrends(patientId, 'temperature', state.selectedTrendPeriod).catch(() => null),
+      ]);
+
+      const hrTrend = hrData ? adaptTrendsToUI(hrData) : mockTrends[0];
+      const spo2Trend = spo2Data ? adaptTrendsToUI(spo2Data) : mockTrends[1];
+      const tempTrend = tempData ? adaptTrendsToUI(tempData) : mockTrends[2];
 
       set({
-        trends: [adaptedTrend],
+        trends: [hrTrend, spo2Trend, tempTrend],
         loading: false,
       });
     } catch (err) {
